@@ -4,3 +4,4 @@ apps/
 # OS
 .DS_Store
 Thumbs.db
+.kiro/steering/project-*.md
