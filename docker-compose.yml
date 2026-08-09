@@ -1,0 +1,39 @@
+# =============================================================================
+# Proxy — standalone, shared across all apps on this machine
+#
+# This is its own git repo. Deploy once per machine:
+#   docker compose up -d
+#
+# How it works:
+#   Creates the "nginx_proxy" Docker network. Any app that joins this network
+#   and sets VIRTUAL_HOST gets automatically routed — no changes needed here.
+# =============================================================================
+
+services:
+
+  proxy:
+    image: jwilder/nginx-proxy:latest
+    container_name: nginx_proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      # Pre-wired for acme-companion (Let's Encrypt) — add it later without
+      # touching anything else
+      - certs:/etc/nginx/certs:ro
+      - vhost:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+    networks:
+      - proxy_net
+
+volumes:
+  certs:
+  vhost:
+  html:
+
+networks:
+  proxy_net:
+    name: nginx_proxy   # well-known name; all apps declare this as external
+    driver: bridge

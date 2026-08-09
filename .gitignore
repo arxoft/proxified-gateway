@@ -1,0 +1,6 @@
+# Ignore the apps directory — each app is its own git repo
+apps/
+
+# OS
+.DS_Store
+Thumbs.db

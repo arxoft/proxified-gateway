@@ -1,0 +1,12 @@
+{
+    "folders": [
+        {
+            "path": "."
+        }
+    ],
+    "settings": {
+        "git.repositoryScanMaxDepth": 2,
+        "git.autoRepositoryDetection": true,
+        "typescript.autoClosingTags": false
+    }
+}
