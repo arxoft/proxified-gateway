@@ -1,0 +1,71 @@
+# =============================================================================
+# Sample — App compatible with proxified-gateway
+#
+# Copy this into your app's repo and adapt to your needs.
+#
+# Requirements:
+#   - proxified-gateway must be running on this machine (docker compose up -d)
+#   - DNS A record for your domain must point to this machine's public IP
+#     before the first deploy (acme-companion needs HTTP-01 challenge to work)
+#
+# Deploy:
+#   docker compose -f docker-compose.proxified-gateway.yml up -d
+# =============================================================================
+
+services:
+
+  # ── Your web/app container ────────────────────────────────────────────────
+  # This is the only service that joins proxy_net. Everything else (db, cache,
+  # workers) stays on the internal appnet — never exposed to the proxy.
+  web:
+    image: your-app-image:latest       # or use build: { context: ., dockerfile: Dockerfile }
+    container_name: myapp_web
+    restart: unless-stopped
+    environment:
+      VIRTUAL_HOST: myapp.example.com  # domain nginx-proxy will route to this container
+      VIRTUAL_PORT: 80                 # port your app listens on inside the container
+      LETSENCRYPT_HOST: myapp.example.com  # triggers automatic Let's Encrypt cert
+    networks:
+      - appnet      # can reach db, redis, etc.
+      - proxy_net   # reachable by nginx-proxy
+    depends_on:
+      - db
+
+  # ── Database (example: Postgres) ─────────────────────────────────────────
+  # Internal only — no host port binding, no proxy exposure.
+  db:
+    image: postgres:16-alpine
+    container_name: myapp_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: myapp
+      POSTGRES_USER: myapp
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - appnet
+
+  # ── Cache / queue (example: Redis) ───────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: myapp_redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    networks:
+      - appnet
+
+volumes:
+  db_data:
+  redis_data:
+
+networks:
+  # Internal network — only app services communicate here
+  appnet:
+    driver: bridge
+
+  # External network — owned by proxified-gateway, already exists on this machine
+  proxy_net:
+    name: nginx_proxy
+    external: true
