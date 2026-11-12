@@ -138,6 +138,35 @@ LETSENCRYPT_HOST: myapp.com
 
 ---
 
+## Per-vhost nginx overrides
+
+To customise nginx settings for a specific domain (e.g. raise the upload limit),
+create a file at `/etc/nginx/vhost.d/<hostname>` inside the proxy container.
+This is backed by the `vhost` Docker volume so it survives container restarts.
+
+**Example — increase upload limit for api.b2bmarket.ca:**
+
+```bash
+sudo bash -c 'echo "client_max_body_size 50M;" > /var/lib/docker/volumes/proxified-gateway_vhost/_data/api.b2bmarket.ca'
+```
+
+Then trigger a config regeneration by restarting any app container on that vhost:
+
+```bash
+docker restart b2bmarket_app
+```
+
+Verify it was picked up:
+
+```bash
+docker exec nginx_proxy grep "client_max_body\|vhost.d" /etc/nginx/conf.d/default.conf
+```
+
+> **Note:** If you rebuild the proxy from scratch (`docker compose down -v`), the
+> volume is wiped and these files must be recreated.
+
+---
+
 ## Upgrading the proxy image
 
 ```bash
